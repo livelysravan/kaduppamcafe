@@ -1,0 +1,1122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>kaduppam</title>
+<link href="https://fonts.googleapis.com/css2?family=Cascadia+Mono&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: #0e0d0b;
+    --fg: #e8e0d4;
+    --accent: #c8a96e;
+    --muted: #3a3530;
+    --font: 'Cascadia Mono', 'Courier New', monospace;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--font);
+    overflow-x: hidden;
+    cursor: none;
+  }
+
+  /* Custom cursor */
+  .cursor {
+    position: fixed;
+    width: 6px;
+    height: 6px;
+    background: var(--accent);
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 9999;
+    transform: translate(-50%, -50%);
+    transition: transform 0.1s ease;
+  }
+
+  .cursor-ring {
+    position: fixed;
+    width: 32px;
+    height: 32px;
+    border: 1px solid var(--accent);
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 9998;
+    transform: translate(-50%, -50%);
+    transition: all 0.18s ease;
+    opacity: 0.5;
+  }
+
+  /* Noise overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 1000;
+    opacity: 0.35;
+  }
+
+  /* NAV */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    padding: 2rem 3rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    z-index: 100;
+    mix-blend-mode: normal;
+  }
+
+  .nav-logo img {
+    height: 32px;
+    width: auto;
+    display: block;
+    object-fit: contain;
+  }
+
+  .nav-links {
+    display: flex;
+    gap: 2.5rem;
+    list-style: none;
+  }
+
+  .nav-links a {
+    font-size: 0.65rem;
+    letter-spacing: 0.15em;
+    color: var(--fg);
+    text-decoration: none;
+    text-transform: lowercase;
+    opacity: 0.5;
+    transition: opacity 0.3s ease;
+    position: relative;
+  }
+
+  .nav-links a::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    width: 0;
+    height: 1px;
+    background: var(--accent);
+    transition: width 0.3s ease;
+  }
+
+  .nav-links a:hover { opacity: 1; }
+  .nav-links a:hover::after { width: 100%; }
+
+  /* HERO */
+  #hero {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 0 3rem;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .hero-kicker {
+    font-size: 0.6rem;
+    letter-spacing: 0.4em;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 2rem;
+    opacity: 0;
+    animation: fadeUp 1s 0.3s forwards;
+  }
+
+  .hero-title {
+    font-size: clamp(4rem, 12vw, 11rem);
+    line-height: 0.9;
+    font-weight: 400;
+    letter-spacing: -0.02em;
+    overflow: hidden;
+  }
+
+  .hero-title .line {
+    display: block;
+    transform: translateY(120%);
+    animation: slideUp 0.9s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  .hero-title .line:nth-child(1) { animation-delay: 0.5s; }
+  .hero-title .line:nth-child(2) { animation-delay: 0.65s; color: var(--accent); }
+
+  .hero-sub {
+    margin-top: 3rem;
+    font-size: 0.65rem;
+    letter-spacing: 0.2em;
+    opacity: 0;
+    color: var(--fg);
+    opacity: 0;
+    animation: fadeUp 1s 1.2s forwards;
+  }
+
+  .hero-sub span { opacity: 0.4; }
+
+  /* Scroll indicator */
+  .scroll-hint {
+    position: absolute;
+    bottom: 3rem;
+    right: 3rem;
+    font-size: 0.55rem;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--fg);
+    opacity: 0;
+    animation: fadeUp 1s 1.5s forwards;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .scroll-hint::before {
+    content: '';
+    display: block;
+    width: 40px;
+    height: 1px;
+    background: var(--accent);
+    animation: lineGrow 1s 2s both;
+  }
+
+  /* Big number */
+  .hero-number {
+    position: absolute;
+    right: 3rem;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: clamp(6rem, 20vw, 18rem);
+    color: transparent;
+    -webkit-text-stroke: 1px var(--muted);
+    line-height: 1;
+    user-select: none;
+    opacity: 0;
+    animation: fadeIn 1.5s 0.8s forwards;
+  }
+
+  /* Divider line */
+  .divider {
+    width: 100%;
+    height: 1px;
+    background: var(--muted);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .divider::after {
+    content: '';
+    position: absolute;
+    top: 0; left: -100%;
+    width: 100%;
+    height: 100%;
+    background: var(--accent);
+    animation: lineSweep 2s ease forwards;
+    animation-play-state: paused;
+  }
+
+  .divider.animated::after { animation-play-state: running; }
+
+  /* ABOUT */
+  #about {
+    padding: 8rem 3rem;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4rem;
+    align-items: start;
+  }
+
+  .section-label {
+    font-size: 0.55rem;
+    letter-spacing: 0.4em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 2rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .section-label::before {
+    content: '';
+    display: block;
+    width: 20px;
+    height: 1px;
+    background: var(--accent);
+  }
+
+  .about-text {
+    font-size: clamp(1.4rem, 3vw, 2.2rem);
+    line-height: 1.4;
+    font-weight: 400;
+    letter-spacing: -0.01em;
+  }
+
+  .about-text em {
+    font-style: normal;
+    color: var(--accent);
+  }
+
+  .about-details {
+    padding-top: 4rem;
+  }
+
+  .detail-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 1.2rem 0;
+    border-bottom: 1px solid var(--muted);
+    font-size: 0.7rem;
+    letter-spacing: 0.1em;
+  }
+
+  .detail-row .key { opacity: 0.4; text-transform: uppercase; font-size: 0.6rem; letter-spacing: 0.2em; }
+  .detail-row .val { color: var(--fg); }
+
+  /* MENU */
+  #menu {
+    padding: 8rem 3rem;
+  }
+
+  .menu-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-bottom: 6rem;
+  }
+
+  .menu-title {
+    font-size: clamp(3rem, 8vw, 6rem);
+    line-height: 1;
+    letter-spacing: -0.03em;
+    font-weight: 400;
+  }
+
+  /* Section quick-jump nav */
+  .menu-nav {
+    display: flex;
+    border: 1px solid var(--muted);
+    margin-bottom: 5rem;
+    overflow-x: auto;
+    scrollbar-width: none;
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: var(--bg);
+  }
+  .menu-nav::-webkit-scrollbar { display: none; }
+
+  .menu-nav-item {
+    font-size: 0.6rem;
+    letter-spacing: 0.2em;
+    text-transform: lowercase;
+    padding: 1rem 1.8rem;
+    color: var(--fg);
+    opacity: 0.4;
+    cursor: pointer;
+    border-right: 1px solid var(--muted);
+    white-space: nowrap;
+    transition: opacity 0.3s, color 0.3s, background 0.3s;
+    text-decoration: none;
+    display: block;
+  }
+  .menu-nav-item:last-child { border-right: none; }
+  .menu-nav-item:hover { opacity: 1; }
+  .menu-nav-item.active { opacity: 1; color: var(--bg); background: var(--accent); }
+
+  /* Section block */
+  .menu-section { margin-bottom: 6rem; }
+  .menu-section:last-child { margin-bottom: 0; }
+
+  .menu-section-header {
+    display: flex;
+    align-items: baseline;
+    gap: 2rem;
+    margin-bottom: 2.5rem;
+    padding-bottom: 1.2rem;
+    border-bottom: 1px solid var(--muted);
+  }
+
+  .menu-section-title {
+    font-size: clamp(1.6rem, 4vw, 2.8rem);
+    font-weight: 400;
+    letter-spacing: -0.02em;
+    line-height: 1;
+  }
+
+  .menu-section-count {
+    font-size: 0.55rem;
+    letter-spacing: 0.3em;
+    color: var(--accent);
+    opacity: 0.7;
+  }
+
+  .menu-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1px;
+    background: var(--muted);
+    border: 1px solid var(--muted);
+  }
+
+  .menu-item {
+    background: var(--bg);
+    padding: 2.5rem 2rem;
+    position: relative;
+    overflow: hidden;
+    transition: background 0.4s ease;
+  }
+
+  .menu-item::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: var(--accent);
+    transform: scaleY(0);
+    transform-origin: bottom;
+    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    z-index: 0;
+  }
+
+  .menu-item:hover::before { transform: scaleY(1); }
+  .menu-item:hover .item-name,
+  .menu-item:hover .item-price,
+  .menu-item:hover .item-desc { color: var(--bg); }
+
+  .menu-item > * { position: relative; z-index: 1; }
+
+  .item-num {
+    font-size: 0.55rem;
+    letter-spacing: 0.3em;
+    opacity: 0.3;
+    margin-bottom: 1.5rem;
+    transition: opacity 0.3s;
+  }
+
+  .menu-item:hover .item-num { opacity: 0.6; color: var(--bg); }
+
+  .item-name {
+    font-size: 1rem;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.6rem;
+    transition: color 0.3s;
+  }
+
+  .item-desc {
+    font-size: 0.6rem;
+    letter-spacing: 0.1em;
+    opacity: 0.5;
+    line-height: 1.6;
+    margin-bottom: 1.5rem;
+    transition: color 0.3s, opacity 0.3s;
+  }
+
+  .item-price {
+    font-size: 0.75rem;
+    color: var(--accent);
+    letter-spacing: 0.1em;
+    transition: color 0.3s;
+  }
+
+  /* MARQUEE */
+  .marquee-section {
+    padding: 3rem 0;
+    overflow: hidden;
+    border-top: 1px solid var(--muted);
+    border-bottom: 1px solid var(--muted);
+  }
+
+  .marquee-track {
+    display: flex;
+    gap: 0;
+    animation: marquee 20s linear infinite;
+    white-space: nowrap;
+  }
+
+  .marquee-item {
+    font-size: 0.6rem;
+    letter-spacing: 0.4em;
+    text-transform: uppercase;
+    padding: 0 3rem;
+    opacity: 0.3;
+    color: var(--fg);
+    display: flex;
+    align-items: center;
+    gap: 3rem;
+  }
+
+  .marquee-item span {
+    color: var(--accent);
+    opacity: 1;
+    font-size: 0.8rem;
+  }
+
+  /* VISIT */
+  #visit {
+    padding: 8rem 3rem;
+    display: grid;
+    grid-template-columns: 1.5fr 1fr;
+    gap: 6rem;
+    align-items: center;
+  }
+
+  .visit-heading {
+    font-size: clamp(2.5rem, 6vw, 5rem);
+    line-height: 1.1;
+    letter-spacing: -0.03em;
+    font-weight: 400;
+  }
+
+  .visit-heading em {
+    font-style: normal;
+    display: block;
+    color: var(--accent);
+  }
+
+  .visit-info { }
+
+  .info-block {
+    margin-bottom: 2.5rem;
+  }
+
+  .info-block .label {
+    font-size: 0.55rem;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 0.8rem;
+  }
+
+  .info-block p {
+    font-size: 0.8rem;
+    letter-spacing: 0.08em;
+    line-height: 1.8;
+    opacity: 0.7;
+  }
+
+  /* FOOTER */
+  footer {
+    padding: 3rem;
+    border-top: 1px solid var(--muted);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  footer .mark {
+    font-size: 0.6rem;
+    letter-spacing: 0.2em;
+    opacity: 0.3;
+    text-transform: lowercase;
+  }
+
+  footer .tagline {
+    font-size: 0.6rem;
+    letter-spacing: 0.15em;
+    color: var(--accent);
+  }
+
+  /* ANIMATIONS */
+  @keyframes fadeUp {
+    to { opacity: 1; transform: translateY(0); }
+    from { opacity: 0; transform: translateY(20px); }
+  }
+
+  @keyframes slideUp {
+    to { transform: translateY(0); }
+  }
+
+  @keyframes fadeIn {
+    to { opacity: 1; }
+    from { opacity: 0; }
+  }
+
+  @keyframes lineGrow {
+    from { width: 0; }
+    to { width: 40px; }
+  }
+
+  @keyframes lineSweep {
+    from { left: -100%; }
+    to { left: 100%; }
+  }
+
+  @keyframes marquee {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
+  }
+
+  /* Reveal on scroll */
+  .reveal {
+    opacity: 0;
+    transform: translateY(30px);
+    transition: opacity 0.8s ease, transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .reveal.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* Stagger children */
+  .stagger > * { opacity: 0; transform: translateY(20px); transition: opacity 0.6s ease, transform 0.6s cubic-bezier(0.16, 1, 0.3, 1); }
+  .stagger.visible > *:nth-child(1) { opacity: 1; transform: none; transition-delay: 0s; }
+  .stagger.visible > *:nth-child(2) { opacity: 1; transform: none; transition-delay: 0.1s; }
+  .stagger.visible > *:nth-child(3) { opacity: 1; transform: none; transition-delay: 0.2s; }
+  .stagger.visible > *:nth-child(4) { opacity: 1; transform: none; transition-delay: 0.3s; }
+  .stagger.visible > *:nth-child(5) { opacity: 1; transform: none; transition-delay: 0.4s; }
+  .stagger.visible > *:nth-child(6) { opacity: 1; transform: none; transition-delay: 0.5s; }
+
+  /* ── HAMBURGER ── */
+  .hamburger {
+    display: none;
+    flex-direction: column;
+    gap: 5px;
+    cursor: pointer;
+    padding: 4px;
+    background: none;
+    border: none;
+    z-index: 200;
+  }
+
+  .hamburger span {
+    display: block;
+    width: 22px;
+    height: 1px;
+    background: var(--fg);
+    transition: transform 0.3s ease, opacity 0.3s ease;
+    transform-origin: center;
+  }
+
+  .hamburger.open span:nth-child(1) { transform: translateY(6px) rotate(45deg); }
+  .hamburger.open span:nth-child(2) { opacity: 0; }
+  .hamburger.open span:nth-child(3) { transform: translateY(-6px) rotate(-45deg); }
+
+  /* Mobile nav drawer */
+  .mobile-drawer {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: var(--bg);
+    z-index: 150;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 4rem 2rem;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+  }
+
+  .mobile-drawer.open {
+    opacity: 1;
+    pointer-events: all;
+  }
+
+  .mobile-drawer a {
+    font-size: clamp(2rem, 10vw, 3rem);
+    letter-spacing: -0.02em;
+    color: var(--fg);
+    text-decoration: none;
+    text-transform: lowercase;
+    display: block;
+    padding: 0.8rem 0;
+    border-bottom: 1px solid var(--muted);
+    width: 100%;
+    opacity: 0;
+    transform: translateX(-20px);
+    transition: opacity 0.4s ease, transform 0.4s ease, color 0.2s;
+  }
+
+  .mobile-drawer.open a { opacity: 1; transform: none; }
+  .mobile-drawer.open a:nth-child(1) { transition-delay: 0.05s; }
+  .mobile-drawer.open a:nth-child(2) { transition-delay: 0.1s; }
+  .mobile-drawer.open a:nth-child(3) { transition-delay: 0.15s; }
+  .mobile-drawer a:hover { color: var(--accent); }
+
+  .mobile-drawer-footer {
+    position: absolute;
+    bottom: 3rem;
+    left: 2rem;
+    font-size: 0.55rem;
+    letter-spacing: 0.3em;
+    color: var(--accent);
+    opacity: 0.6;
+    text-transform: uppercase;
+  }
+
+  /* ── TABLET (≤900px) ── */
+  @media (max-width: 900px) {
+    .menu-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  /* ── MOBILE (≤768px) ── */
+  @media (max-width: 768px) {
+    /* hide custom cursor on touch */
+    .cursor, .cursor-ring { display: none; }
+    body { cursor: auto; }
+
+    /* nav */
+    nav { padding: 1.2rem 1.5rem; background: var(--bg); }
+    .nav-links { display: none; }
+    .hamburger { display: flex; }
+    .mobile-drawer { display: flex; }
+
+    /* hero */
+    #hero { padding: 0 1.5rem; padding-top: 5rem; min-height: 100svh; }
+    .hero-number { display: none; }
+    .hero-title { font-size: clamp(3rem, 14vw, 5rem); }
+    .scroll-hint { bottom: 2rem; right: 1.5rem; }
+
+    /* about */
+    #about { grid-template-columns: 1fr; padding: 4rem 1.5rem; gap: 2.5rem; }
+    .about-details { padding-top: 0; }
+    .about-text { font-size: clamp(1.3rem, 5vw, 1.8rem); }
+
+    /* menu */
+    #menu { padding: 4rem 1.5rem; }
+    .menu-header { margin-bottom: 3rem; flex-wrap: wrap; gap: 0.5rem; }
+    .menu-nav { margin-bottom: 3rem; }
+    .menu-nav-item { padding: 0.9rem 1.2rem; font-size: 0.65rem; }
+    .menu-grid { grid-template-columns: 1fr; }
+    .menu-section { margin-bottom: 4rem; }
+    .menu-item { padding: 1.8rem 1.5rem; }
+    .item-name { font-size: 0.95rem; }
+
+    /* menu touch fill */
+    .menu-item:active::before { transform: scaleY(1); }
+    .menu-item:active .item-name,
+    .menu-item:active .item-price,
+    .menu-item:active .item-desc { color: var(--bg); }
+    .menu-item:active .item-num { opacity: 0.6; color: var(--bg); }
+
+    /* visit */
+    #visit { grid-template-columns: 1fr; padding: 4rem 1.5rem; gap: 3rem; }
+
+    /* footer */
+    footer { padding: 2rem 1.5rem; flex-direction: column; gap: 0.8rem; text-align: center; }
+  }
+
+  /* ── SMALL MOBILE (≤400px) ── */
+  @media (max-width: 400px) {
+    .hero-title { font-size: clamp(2.5rem, 16vw, 4rem); }
+    .menu-nav-item { padding: 0.8rem 1rem; font-size: 0.6rem; }
+  }
+</style>
+</head>
+<body>
+
+<div class="cursor" id="cursor"></div>
+<div class="cursor-ring" id="cursorRing"></div>
+
+<nav>
+  <div class="nav-logo">
+    <img src="cafelogo.png" alt="kaduppam" />
+  </div>
+  <ul class="nav-links">
+    <li><a href="#about">about</a></li>
+    <li><a href="#menu">menu</a></li>
+    <li><a href="#visit">visit</a></li>
+  </ul>
+  <button class="hamburger" id="hamburger" aria-label="menu">
+    <span></span><span></span><span></span>
+  </button>
+</nav>
+
+<!-- Mobile drawer -->
+<div class="mobile-drawer" id="mobileDrawer">
+  <a href="#about" class="drawer-link">about</a>
+  <a href="#menu" class="drawer-link">menu</a>
+  <a href="#visit" class="drawer-link">visit</a>
+  <div class="mobile-drawer-footer">kaduppam · kerala</div>
+</div>
+
+<!-- HERO -->
+<section id="hero">
+  <p class="hero-kicker">// est. kerala, india</p>
+  <h1 class="hero-title">
+    <span class="line">slow coffee.</span>
+    <span class="line">good time.</span>
+  </h1>
+  <p class="hero-sub"><span>—</span> a neighbourhood cafe in the heart of kerala</p>
+  <div class="hero-number">01</div>
+  <div class="scroll-hint">scroll</div>
+</section>
+
+<div class="divider" id="d1"></div>
+
+<!-- ABOUT -->
+<section id="about">
+  <div>
+    <div class="section-label reveal">about</div>
+    <p class="about-text reveal">
+      a <em>small, unhurried</em> space where the coffee is made with care and the silences are comfortable.
+    </p>
+  </div>
+  <div class="about-details stagger">
+    <div class="detail-row">
+      <span class="key">location</span>
+      <span class="val">kerala, india</span>
+    </div>
+    <div class="detail-row">
+      <span class="key">open</span>
+      <span class="val">07:30 — 22:00</span>
+    </div>
+    <div class="detail-row">
+      <span class="key">closed</span>
+      <span class="val">tuesday</span>
+    </div>
+    <div class="detail-row">
+      <span class="key">wifi</span>
+      <span class="val">yes, slow intentionally</span>
+    </div>
+    <div class="detail-row">
+      <span class="key">vibe</span>
+      <span class="val">read a book. linger.</span>
+    </div>
+  </div>
+</section>
+
+<!-- MARQUEE -->
+<div class="marquee-section">
+  <div class="marquee-track">
+    <div class="marquee-item">filter coffee <span>·</span> black tea <span>·</span> cold brew <span>·</span> puttu <span>·</span> pazham pori <span>·</span> cardamom milk <span>·</span> kerala blend <span>·</span></div>
+    <div class="marquee-item">filter coffee <span>·</span> black tea <span>·</span> cold brew <span>·</span> puttu <span>·</span> pazham pori <span>·</span> cardamom milk <span>·</span> kerala blend <span>·</span></div>
+    <div class="marquee-item">filter coffee <span>·</span> black tea <span>·</span> cold brew <span>·</span> puttu <span>·</span> pazham pori <span>·</span> cardamom milk <span>·</span> kerala blend <span>·</span></div>
+  </div>
+</div>
+
+<!-- MENU -->
+<section id="menu">
+  <div class="menu-header reveal">
+    <h2 class="menu-title">the menu.</h2>
+    <span style="font-size:0.6rem; letter-spacing:0.2em; opacity:0.4">// what we make</span>
+  </div>
+
+  <!-- Quick-jump nav -->
+  <nav class="menu-nav" id="menuNav">
+    <a class="menu-nav-item active" href="#s-coffee">coffee</a>
+    <a class="menu-nav-item" href="#s-tea">tea</a>
+    <a class="menu-nav-item" href="#s-dosa">dosa</a>
+    <a class="menu-nav-item" href="#s-snacks">snacks</a>
+    <a class="menu-nav-item" href="#s-juices">juices</a>
+  </nav>
+
+  <!-- COFFEE -->
+  <div class="menu-section reveal" id="s-coffee">
+    <div class="menu-section-header">
+      <h3 class="menu-section-title">coffee</h3>
+      <span class="menu-section-count">// 04 items</span>
+    </div>
+    <div class="menu-grid stagger">
+      <div class="menu-item">
+        <div class="item-num">01</div>
+        <div class="item-name">kaduppam filter</div>
+        <div class="item-desc">traditional kerala drip. dark roast. brass tumbler.</div>
+        <div class="item-price">₹ 60</div>
+      </div>
+      <div class="menu-item">
+        <div class="item-num">02</div>
+        <div class="item-name">cold brew</div>
+        <div class="item-desc">12-hour steep. served over ice. no sugar.</div>
+        <div class="item-price">₹ 120</div>
+      </div>
+      <div class="menu-item">
+        <div class="item-num">03</div>
+        <div class="item-name">black coffee</div>
+        <div class="item-desc">single origin. simple. no fuss.</div>
+        <div class="item-price">₹ 70</div>
+      </div>
+      <div class="menu-item">
+        <div class="item-num">04</div>
+        <div class="item-name">cardamom coffee</div>
+        <div class="item-desc">filter base. crushed cardamom. kerala style.</div>
+        <div class="item-price">₹ 80</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TEA -->
+  <div class="menu-section reveal" id="s-tea">
+    <div class="menu-section-header">
+      <h3 class="menu-section-title">tea</h3>
+      <span class="menu-section-count">// 04 items</span>
+    </div>
+    <div class="menu-grid stagger">
+      <div class="menu-item">
+        <div class="item-num">01</div>
+        <div class="item-name">black tea</div>
+        <div class="item-desc">single estate munnar leaf. nothing added.</div>
+        <div class="item-price">₹ 50</div>
+      </div>
+      <div class="menu-item">
+        <div class="item-num">02</div>
+        <div class="item-name">cardamom milk tea</div>
+        <div class="item-desc">warm, spiced, lightly sweet. a comfort drink.</div>
+        <div class="item-price">₹ 70</div>
+      </div>
+      <div class="menu-item">
+        <div class="item-num">03</div>
+        <div class="item-name">sulaimani</div>
+        <div class="item-desc">black tea with lemon. malabar classic.</div>
+        <div class="item-price">₹ 60</div>
+      </div>
+      <div class="menu-item">
+        <div class="item-num">04</div>
+        <div class="item-name">ginger tea</div>
+        <div class="item-desc">sharp. warming. cuts through the afternoon.</div>
+        <div class="item-price">₹ 55</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DOSA -->
+  <div class="menu-section reveal" id="s-dosa">
+    <div class="menu-section-header">
+      <h3 class="menu-section-title">dosa</h3>
+      <span class="menu-section-count">// 05 items</span>
+    </div>
+    <div class="menu-grid stagger">
+      <div class="menu-item">
+        <div class="item-num">01</div>
+        <div class="item-name">plain dosa</div>
+        <div class="item-desc">thin, crisp. coconut chutney. sambar.</div>
+        <div class="item-price">₹ 80</div>
+      </div>
+      <div class="menu-item">
+        <div class="item-num">02</div>
+        <div class="item-name">masala dosa</div>
+        <div class="item-desc">potato filling. turmeric. mustard.</div>
+        <div class="item-price">₹ 100</div>
+      </div>
+      <div class="menu-item">
+        <div class="item-num">03</div>
+        <div class="item-name">rava dosa</div>
+        <div class="item-desc">semolina. lacy and crisp. with green chilli.</div>
+        <div class="item-price">₹ 90</div>
+      </div>
+      <div class="menu-item">
+        <div class="item-num">04</div>
+        <div class="item-name">onion dosa</div>
+        <div class="item-desc">caramelised onion. cumin. thin batter.</div>
+        <div class="item-price">₹ 95</div>
+      </div>
+      <div class="menu-item">
+        <div class="item-num">05</div>
+        <div class="item-name">egg dosa</div>
+        <div class="item-desc">egg folded in. pepper. salt. done right.</div>
+        <div class="item-price">₹ 110</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SNACKS -->
+  <div class="menu-section reveal" id="s-snacks">
+    <div class="menu-section-header">
+      <h3 class="menu-section-title">snacks</h3>
+      <span class="menu-section-count">// 05 items</span>
+    </div>
+    <div class="menu-grid stagger">
+      <div class="menu-item">
+        <div class="item-num">01</div>
+        <div class="item-name">pazham pori</div>
+        <div class="item-desc">ripe banana fritter. served warm. pairs well.</div>
+        <div class="item-price">₹ 40</div>
+      </div>
+      <div class="menu-item">
+        <div class="item-num">02</div>
+        <div class="item-name">puttu + kadala</div>
+        <div class="item-desc">steamed rice rolls. black chickpea curry.</div>
+        <div class="item-price">₹ 90</div>
+      </div>
+      <div class="menu-item">
+        <div class="item-num">03</div>
+        <div class="item-name">unniyappam</div>
+        <div class="item-desc">jaggery rice balls. cardamom. coconut pieces.</div>
+        <div class="item-price">₹ 50</div>
+      </div>
+      <div class="menu-item">
+        <div class="item-num">04</div>
+        <div class="item-name">kappa + fish curry</div>
+        <div class="item-desc">tapioca. spicy red fish curry. the real thing.</div>
+        <div class="item-price">₹ 120</div>
+      </div>
+      <div class="menu-item">
+        <div class="item-num">05</div>
+        <div class="item-name">boiled egg</div>
+        <div class="item-desc">with chilli salt. simple. honest.</div>
+        <div class="item-price">₹ 30</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- JUICES -->
+  <div class="menu-section reveal" id="s-juices">
+    <div class="menu-section-header">
+      <h3 class="menu-section-title">juices / cold</h3>
+      <span class="menu-section-count">// 04 items</span>
+    </div>
+    <div class="menu-grid stagger">
+      <div class="menu-item">
+        <div class="item-num">01</div>
+        <div class="item-name">fresh lime soda</div>
+        <div class="item-desc">salted or sweet. your call. always cold.</div>
+        <div class="item-price">₹ 60</div>
+      </div>
+      <div class="menu-item">
+        <div class="item-num">02</div>
+        <div class="item-name">sugarcane juice</div>
+        <div class="item-desc">pressed fresh. ginger. lemon. no ice.</div>
+        <div class="item-price">₹ 70</div>
+      </div>
+      <div class="menu-item">
+        <div class="item-num">03</div>
+        <div class="item-name">tender coconut</div>
+        <div class="item-desc">straight from the shell. kerala essential.</div>
+        <div class="item-price">₹ 80</div>
+      </div>
+      <div class="menu-item">
+        <div class="item-num">04</div>
+        <div class="item-name">buttermilk</div>
+        <div class="item-desc">spiced. cumin. curry leaf. cooling.</div>
+        <div class="item-price">₹ 50</div>
+      </div>
+    </div>
+  </div>
+
+</section>
+
+<div class="divider" id="d2"></div>
+
+<!-- VISIT -->
+<section id="visit">
+  <h2 class="visit-heading reveal">
+    come find
+    <em>kaduppam.</em>
+  </h2>
+  <div class="visit-info stagger">
+    <div class="info-block">
+      <div class="label">address</div>
+      <p>near the old bridge<br>kerala, india</p>
+    </div>
+    <div class="info-block">
+      <div class="label">hours</div>
+      <p>mon — sat<br>07:30 to 22:00</p>
+    </div>
+    <div class="info-block">
+      <div class="label">contact</div>
+      <p>@kaduppam<br>on instagram</p>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <span class="mark">© kaduppam cafe — kerala</span>
+  <span class="tagline">// good coffee. slow days.</span>
+</footer>
+
+<script>
+  // Hamburger
+  const hamburger = document.getElementById('hamburger');
+  const drawer = document.getElementById('mobileDrawer');
+
+  hamburger.addEventListener('click', () => {
+    hamburger.classList.toggle('open');
+    drawer.classList.toggle('open');
+    document.body.style.overflow = drawer.classList.contains('open') ? 'hidden' : '';
+  });
+
+  document.querySelectorAll('.drawer-link').forEach(link => {
+    link.addEventListener('click', () => {
+      hamburger.classList.remove('open');
+      drawer.classList.remove('open');
+      document.body.style.overflow = '';
+    });
+  });
+
+  // Cursor
+  const cursor = document.getElementById('cursor');
+  const ring = document.getElementById('cursorRing');
+  let mx = 0, my = 0, rx = 0, ry = 0;
+
+  document.addEventListener('mousemove', e => {
+    mx = e.clientX; my = e.clientY;
+    cursor.style.left = mx + 'px';
+    cursor.style.top = my + 'px';
+  });
+
+  function animateRing() {
+    rx += (mx - rx) * 0.12;
+    ry += (my - ry) * 0.12;
+    ring.style.left = rx + 'px';
+    ring.style.top = ry + 'px';
+    requestAnimationFrame(animateRing);
+  }
+  animateRing();
+
+  document.querySelectorAll('a, .menu-item, button').forEach(el => {
+    el.addEventListener('mouseenter', () => {
+      ring.style.transform = 'translate(-50%, -50%) scale(2)';
+      ring.style.opacity = '0.2';
+    });
+    el.addEventListener('mouseleave', () => {
+      ring.style.transform = 'translate(-50%, -50%) scale(1)';
+      ring.style.opacity = '0.5';
+    });
+  });
+
+  // Menu section nav — highlight active on scroll
+  const menuSections = document.querySelectorAll('.menu-section');
+  const menuNavItems = document.querySelectorAll('.menu-nav-item');
+
+  const sectionObs = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        const id = e.target.id;
+        menuNavItems.forEach(n => {
+          n.classList.toggle('active', n.getAttribute('href') === '#' + id);
+        });
+      }
+    });
+  }, { threshold: 0.35 });
+
+  menuSections.forEach(s => sectionObs.observe(s));
+
+  // Smooth scroll for menu nav
+  menuNavItems.forEach(item => {
+    item.addEventListener('click', e => {
+      e.preventDefault();
+      const target = document.querySelector(item.getAttribute('href'));
+      if (target) {
+        const offset = target.getBoundingClientRect().top + window.scrollY - 80;
+        window.scrollTo({ top: offset, behavior: 'smooth' });
+      }
+    });
+  });
+  const obs = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.classList.add('visible');
+        // animate dividers
+        if (e.target.classList.contains('divider')) {
+          e.target.classList.add('animated');
+        }
+        obs.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.1 });
+
+  document.querySelectorAll('.reveal, .stagger, .divider').forEach(el => obs.observe(el));
+</script>
+</body>
+</html>
